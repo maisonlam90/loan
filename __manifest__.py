@@ -29,6 +29,7 @@ Long description of module's purpose
         'views/templates.xml',
         'views/loan_customer_views.xml',
         'views/loan_contract_views.xml',
+        'views/loan_asset_views.xml',
         'views/menu.xml',
     ],
 
