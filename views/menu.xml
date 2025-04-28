@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+
+    <!-- Action Báo Cáo Doanh Thu -->
+    <record id="action_loan_report_pivot" model="ir.actions.act_window">
+        <field name="name">Báo Cáo Doanh Thu</field>
+        <field name="res_model">loan.contract</field>
+        <field name="view_mode">pivot,graph</field>
+        <field name="context">{'group_by': ['company_id', 'date_start']}</field>
+        <field name="domain">[('state', '!=', 'draft')]</field>
+        <!-- Không có dòng domain với user -->
+    </record>
+
+    <!-- Menu CON: Báo Cáo (hiện trên thanh ngang, click mở luôn báo cáo) -->
+    <menuitem id="menu_loan_report" name="Báo Cáo" parent="loan_contract" action="action_loan_report_pivot" sequence="20" groups="loan.group_loan_manager"/>
+    
+</odoo>

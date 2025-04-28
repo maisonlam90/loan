@@ -1,0 +1,174 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- List view-->
+    <record model="ir.ui.view" id="loan.list">
+        <field name="name">loan contract list</field>
+        <field name="model">loan.contract</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+                <field name="company_id" optional="show" />
+                <field name="date_start" optional="show" />
+                <field name="date_end" optional="hide" />
+                <field name="customer_id"/>
+                <field name="phone" optional="show"/>
+                <field name="cmnd" optional="hide" />
+                <field name="loan_amount" optional="hide"/>
+                <field name="collateral_description" optional="hide"/>
+                <field name="current_interest"/>
+                <field name="storage_fee" optional="hide"/>
+                <field name="accumulated_interest" optional="hide"/>
+                <field name="total_settlement_amount" optional="hide"/>
+                <field name="state" />
+            </list>
+        </field>
+    </record>
+
+
+    <!-- Tạo action tham chiếu đến view -->
+    <record id="action_loan_contract" model="ir.actions.act_window">
+        <field name="name">Hợp đồng vay</field>
+        <field name="res_model">loan.contract</field>
+        <field name="view_mode">list,form</field>
+
+    </record>
+
+    <!-- Form View -->
+    <record id="view_loan_contract_form" model="ir.ui.view">
+        <field name="name">loan.contract.form</field>
+        <field name="model">loan.contract</field>
+        <field name="arch" type="xml">
+            <form>
+   
+
+                <!-- Nội dung form tùy chỉnh -->
+                <sheet>
+                    <separator string="Thông tin vay" colspan="2"/>
+                    <group>
+
+                        <group>
+                            <field name="name"/>
+                            <field name="customer_id" options="{'no_create': False, 'no_quick_create': True}"/>
+                            <field name="phone"/>
+                            <field name="cmnd"/>
+                            <field name="date_start" />
+                            <field name="date_end"/>
+                            <field name="duration_months"/>
+                            <field name="collateral_type"/>
+                        </group>
+                        <group>
+                            <field name="collateral_description"/>
+                            <field name="collateral_value"/>
+                            <field name="loan_amount" string="Số tiền vay ban đầu"/>
+                            <field name="current_principal" string="Số dư gốc hiện tại"/>
+                            <field name="interest_rate"/>
+                            <field name="current_interest"/>
+                            <field name="state"/>
+                        </group>
+                    </group>
+                    <separator string="Các chi phí khác" colspan="2"/>
+                    <group>
+                        <group>
+                            <field name="storage_fee_rate"/>
+                            <field name="storage_fee"/>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+                    <separator string="Tổng tiền tất toán" colspan="2"/>
+                    <group>
+                        <group>
+                            <field name="total_settlement_amount" readonly="1" class="oe_subtotal_font oe_bold"/>
+                        </group>
+                        <group>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Lịch sử giao dịch">
+                            
+                            <field name="transaction_ids">
+                                <list editable="bottom" string="Chi tiết tính lãi">
+                                    <field name="date" string="Ngày" />
+                                    <field name="transaction_type" string="Loại GD"/>
+                                    <field name="amount" string="Số tiền"/>
+
+                                    <field name="days_from_prev" string="Số ngày"/>
+                                    <field name="principal_balance" string="Dư nợ gốc"/>
+                                    <field name="interest_for_period" string="Lãi phát sinh"/>
+                                    <field name="accumulated_interest" string="Lãi tích lũy"/>
+
+                                    <field name="note" string="Ghi chú"/>
+                                </list>
+                            </field>
+
+                            <!-- Thêm phần tổng hợp bên ngoài list nhưng vẫn trong page -->
+                            <div class="oe_subtotal_footer" style="margin-top: 16px;">
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td width="20%">
+                                            <b>Tổng dư nợ hiện tại:</b>
+                                        </td>
+                                        <td width="30%" class="text-end">
+                                            <field name="current_principal" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                        <td width="20%">
+                                            <b>Lãi đến ngày hiện tại:</b>
+                                        </td>
+                                        <td width="30%" class="text-end">
+                                            <field name="current_interest" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <b>Lãi tích lũy:</b>
+                                        </td>
+                                        <td class="text-end">
+                                            <field name="accumulated_interest" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                        <td>
+                                            <b>Tổng lãi đã trả:</b>
+                                        </td>
+                                        <td class="text-end">
+                                            <field name="total_paid_interest" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            <b>Phí lưu kho:</b>
+                                        </td>
+                                        <td class="text-end">
+                                            <field name="storage_fee" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                        <td>
+                                            <b>Tổng thanh toán:</b>
+                                        </td>
+                                        <td class="text-end oe_subtotal_font oe_bold">
+                                            <field name="total_settlement_amount" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </page>
+                    </notebook>
+
+
+
+
+
+                </sheet>
+
+                <!-- Phần Chatter bên phải - GIỐNG HỆT SALE -->
+
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!--Thêm menu Hợp đồng vay-->
+    <menuitem id="loan_contract" name="Hợp đồng vay" action="action_loan_contract" sequence="11"/>
+
+
+
+
+</odoo>

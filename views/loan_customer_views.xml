@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <record id="view_partner_form_inherit_cmnd" model="ir.ui.view">
+    <field name="name">res.partner.form.inherit.cmnd</field>
+    <field name="model">res.partner</field>
+    <field name="inherit_id" ref="base.view_partner_form"/>
+    <!-- kế thừa view gốc -->
+    <field name="arch" type="xml">
+
+      <!-- Chèn sau số điện thoại (phone) -->
+      <xpath expr="//group[.//field[@name='phone']]" position="after">
+        <group>
+          <group string="Thông tin CCCD/CMND">
+            <field name="cmnd"/>
+            <field name="cmnd_issue_date"/>
+            <field name="cmnd_issue_place"/>
+          </group>
+          <group string="Thông tin ngân hàng">
+            <field name="bank_account"/>
+            <field name="bank_name"/>
+            <field name="bank_branch"/>
+          </group>
+        </group>
+      </xpath>
+
+      <xpath expr="//field[@name='mobile']" position="attributes">
+        <attribute name="invisible">1</attribute>
+      </xpath>
+
+    </field>
+  </record>
+</odoo>
