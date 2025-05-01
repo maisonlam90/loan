@@ -113,13 +113,7 @@ class LoanContract(models.Model):
     # ========== THÔNG TIN TÀI SẢN CẦM ==========
     
     
-    collateral_type = fields.Selection(
-        [('home', 'Nhà'),
-         ('xe', 'Xe cộ'),
-         ('other', 'Khác')],
-        string='Loại tài sản',
-        required=True
-    )
+    asset_ids = fields.One2many('loan.asset', 'contract_id', string='Tài sản cầm cố')
 
     collateral_description = fields.Text(
         string='Mô tả tài sản',
@@ -358,30 +352,36 @@ class LoanContract(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        today = fields.Date.today().strftime('%d%m%Y')
+        today = fields.Date.today().strftime('%d%m%Y')  # ví dụ: 01052024
 
         for vals in vals_list:
             if vals.get('name', 'New') == 'New':
-                type_code = {
-                    'home': 'NH',
-                    'xe': 'XE',
-                    'other': 'TS'
-                }.get(vals.get('collateral_type', 'other'), 'TS')
+                company = self.env['res.company'].browse(vals.get('company_id')) or self.env.company
+                company_code = (company.code or company.name or "COMP").replace(" ", "").upper()
+
+                prefix = f"LOAN-{today}-{company_code}"
 
                 last_contract = self.search([
-                    ('name', 'like', f"{type_code}-{today}-%")
+                    ('name', 'like', f"{prefix}-%"),
+                    ('company_id', '=', company.id)
                 ], order='name desc', limit=1)
 
                 if last_contract:
-                    last_seq = int(last_contract.name.split('-')[-1])
+                    try:
+                        last_seq = int(last_contract.name.split('-')[-1])
+                    except ValueError:
+                        last_seq = 0
                     seq = last_seq + 1
                 else:
                     seq = 1
 
-                vals['name'] = f"{type_code}-{today}-{seq}"
+                vals['name'] = f"{prefix}-{seq}"
+
         records = super(LoanContract, self).create(vals_list)
         records.with_context(no_recompute=True)._update_financial_data()
         return records
+
+
 
     def _update_financial_data(self):
         for contract in self:
@@ -393,4 +393,11 @@ class LoanContract(models.Model):
             contract._compute_interest_totals()
             contract._compute_current_interest()
             contract._compute_total_settlement_amount()
+            
+            
+# kế thừa mã công ty để tạo số hợp đồng tự động           
+class ResCompany(models.Model):
+    _inherit = 'res.company'
+
+    code = fields.Char(string='Mã công ty', required=True)
 
