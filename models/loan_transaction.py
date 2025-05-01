@@ -23,7 +23,7 @@ class LoanTransaction(models.Model):
     date = fields.Date(string='Ngày giao dịch',
                         default=fields.Date.today)
     amount = fields.Float(
-        string='Số tiền',  help="Dương = vay thêm, Âm = thanh toán", tracking="True",)
+        string='Số tiền',  help="Dương = vay thêm, Âm = thanh toán")
     note = fields.Char(string='Ghi chú', )
 
     days_from_prev = fields.Integer(
