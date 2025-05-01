@@ -2,16 +2,31 @@ from odoo import models, fields
 
 class LoanAsset(models.Model):
     _name = 'loan.asset'
-    _description = 'Tài Sản Cầm'
+    _description = 'Tài sản cầm cố'
 
     name = fields.Char(string='Tên tài sản', required=True)
+    contract_id = fields.Many2one('loan.contract', string='Hợp đồng vay', ondelete='cascade')
     asset_type = fields.Selection([
         ('gold', 'Vàng'),
-        ('vehicle', 'Xe cộ'),
-        ('electronics', 'Điện tử'),
+        ('vehicle', 'Xe'),
+        ('real_estate', 'Bất động sản'),
         ('other', 'Khác')
     ], string='Loại tài sản', required=True)
-    description = fields.Text(string='Mô tả')
-    estimated_value = fields.Float(string='Giá trị ước tính')
-    loan_id = fields.Many2one('loan.contract', string='Khoản vay liên quan')
-    customer_id = fields.Many2one('res.partner', string='Khách hàng')
+    value = fields.Monetary(string='Giá trị định giá', currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', string='Đơn vị tiền tệ', required=True, default=lambda self: self.env.company.currency_id)
+    description = fields.Text(string='Mô tả chi tiết')
+    customer_id = fields.Many2one(
+        'res.partner',
+        string='Khách hàng',
+        related='contract_id.customer_id',
+        store=True,
+        readonly=True
+    )
+    
+    company_id = fields.Many2one(
+        'res.company',
+        string='Công ty',
+        related='contract_id.company_id',
+        store=True,
+        readonly=True
+    )
