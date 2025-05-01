@@ -7,7 +7,7 @@ class LoanTransaction(models.Model):
     _description = 'Giao dịch hợp đồng vay'
     _order = 'date asc, id asc'  # Sắp xếp mặc định theo ngày
     
-    name = fields.Char(string='Mã giao dịch', readonly=1, default='New')
+    name = fields.Char(string='Mã giao dịch', readonly=True, default='New')
 
     contract_id = fields.Many2one(
         'loan.contract',
