@@ -243,37 +243,7 @@ class LoanContract(models.Model):
         for contract in self:
             if not contract.company_id:
                 raise ValidationError("Hợp đồng phải thuộc về một công ty!")
-# Tự động sinh số hợp đồng
 
-    @api.model_create_multi
-    def create(self, vals_list):
-        today = fields.Date.today().strftime('%d%m%Y')  # Ngày hiện tại định dạng DDMMYYYY
-
-        for vals in vals_list:
-            if vals.get('name', 'New') == 'New':
-                type_code = {
-                    'home': 'NH',
-                    'xe': 'XE',
-                    'other': 'TS'
-                }.get(vals.get('collateral_type', 'other'), 'TS')
-
-                # Tìm hợp đồng cuối cùng trong NGÀY HÔM NAY và theo loại tài sản
-                last_contract = self.search([
-                    ('name', 'like', f"{type_code}-{today}-%")
-                ], order='name desc', limit=1)
-
-                if last_contract:
-                    # Lấy số thứ tự từ mã hợp đồng cuối cùng
-                    last_seq = int(last_contract.name.split('-')[-1])
-                    seq = last_seq + 1
-                else:
-                    seq = 1
-
-                # Không cần zfill, dùng số tự nhiên
-                vals['name'] = f"{type_code}-{today}-{seq}"
-
-        records = super(LoanContract, self).create(vals_list)
-        return records
 
 
 # Tính tổng lãi tất toán
@@ -379,7 +349,7 @@ class LoanContract(models.Model):
                 contract.accumulated_interest = contract.loan_amount * daily_rate * days
                 contract.total_paid_interest = 0.0
 
-# Hàm cập nhật số liệu tính lãi trong notebook
+# Hàm cập nhật số liệu tính lãi và tự sinh số hợp đồng khi ấn nút lưu
     def write(self, vals):
         res = super(LoanContract, self).write(vals)
         if not self.env.context.get('no_recompute'):
@@ -388,6 +358,27 @@ class LoanContract(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        today = fields.Date.today().strftime('%d%m%Y')
+
+        for vals in vals_list:
+            if vals.get('name', 'New') == 'New':
+                type_code = {
+                    'home': 'NH',
+                    'xe': 'XE',
+                    'other': 'TS'
+                }.get(vals.get('collateral_type', 'other'), 'TS')
+
+                last_contract = self.search([
+                    ('name', 'like', f"{type_code}-{today}-%")
+                ], order='name desc', limit=1)
+
+                if last_contract:
+                    last_seq = int(last_contract.name.split('-')[-1])
+                    seq = last_seq + 1
+                else:
+                    seq = 1
+
+                vals['name'] = f"{type_code}-{today}-{seq}"
         records = super(LoanContract, self).create(vals_list)
         records.with_context(no_recompute=True)._update_financial_data()
         return records
