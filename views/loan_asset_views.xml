@@ -6,8 +6,11 @@
             <list>
                 <field name="name"/>
                 <field name="asset_type"/>
-                <field name="estimated_value"/>
                 <field name="customer_id"/>
+                <field name="contract_id"/>
+                <field name="value"/>
+                <field name="description" optional="hide"/>
+                <field name="company_id" optional="hide"/>
             </list>
         </field>
     </record>
@@ -21,9 +24,9 @@
                     <group>
                         <field name="name"/>
                         <field name="asset_type"/>
-                        <field name="estimated_value"/>
+                        <field name="contract_id" options="{'no_create': True}"/>
                         <field name="customer_id"/>
-                        <field name="loan_id" options="{'no_create': True}"/>
+                        <field name="value"/>
                         <field name="description"/>
                     </group>
                 </sheet>

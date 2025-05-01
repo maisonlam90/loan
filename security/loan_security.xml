@@ -27,6 +27,13 @@
         <field name="groups" eval="[(4, ref('base.group_user'))]"/>
     </record>
 
+    <record id="loan_asset_rule_by_company" model="ir.rule">
+        <field name="name">Tài sản thế chấp - chỉ thấy theo công ty</field>
+        <field name="model_id" ref="loan.model_loan_asset"/>
+        <field name="domain_force">[('company_id', 'in', user.company_ids.ids)]</field>
+        <field name="groups" eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
     <record id="loan_contract_company_rule_admin" model="ir.rule">
         <field name="name">Admin xem tất cả hợp đồng</field>
         <field name="model_id" ref="model_loan_contract"/>

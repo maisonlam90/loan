@@ -54,8 +54,7 @@
                             <field name="date_start" />
                             <field name="date_end"/>
                             <field name="duration_months"/>
-                            <field name="collateral_type"/>
-                           
+                     
                         </group>
                         <group>
                             <field name="collateral_description"/>
@@ -84,6 +83,17 @@
                         <group>
                         </group>
                     </group>
+                    <notebook>
+                        <page string="Tài sản thế chấp">
+                            <field name="asset_ids" string="Chi tiết tài sản">
+                                <list editable="bottom">
+                                    <field name="name"/>
+                                    <field name="asset_type"/>
+                                    <field name="value"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
 
                     <notebook>
                         <page string="Lịch sử giao dịch">
@@ -98,6 +108,7 @@
                                     <field name="principal_balance" string="Dư nợ gốc"/>
                                     <field name="interest_for_period" string="Lãi phát sinh"/>
                                     <field name="accumulated_interest" string="Lãi tích lũy"/>
+                                    <field name="name" readonly="1"/>
 
                                     <field name="note" string="Ghi chú"/>
                                 </list>
