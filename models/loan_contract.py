@@ -111,6 +111,8 @@ class LoanContract(models.Model):
     )
 
     # ========== THÔNG TIN TÀI SẢN CẦM ==========
+    
+    
     collateral_type = fields.Selection(
         [('home', 'Nhà'),
          ('xe', 'Xe cộ'),
@@ -138,6 +140,7 @@ class LoanContract(models.Model):
         tracking=True,
         required=True
     )
+    
 
     # Trường lưu lịch sử biến động
     transaction_ids = fields.One2many(
