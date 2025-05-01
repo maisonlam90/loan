@@ -55,6 +55,7 @@
                             <field name="date_end"/>
                             <field name="duration_months"/>
                             <field name="collateral_type"/>
+                           
                         </group>
                         <group>
                             <field name="collateral_description"/>
