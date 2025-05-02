@@ -2,7 +2,10 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta, date
+import logging
 import re
+
+_logger = logging.getLogger(__name__)
 
 
 class LoanContract(models.Model):
@@ -393,8 +396,23 @@ class LoanContract(models.Model):
             contract._compute_interest_totals()
             contract._compute_current_interest()
             contract._compute_total_settlement_amount()
-            
- # Nút cập nhật lãi toàn cửa hàng   
+# Chạy cron cập nhật lãi hàng ngày            
+    @api.model
+    def _cron_update_interest_daily(self):
+        company = self.env.company
+        contracts = self.search([
+            ('state', '=', 'active'),
+            ('company_id', '=', company.id),
+        ])
+
+        _logger.info(f"[Cron] 🏢 Công ty: {company.name} ({company.id}) - Bắt đầu cập nhật lãi {len(contracts)} hợp đồng")
+
+        for contract in contracts:
+            contract._update_financial_data()
+            _logger.info(f"[Cron] ✅ Hợp đồng {contract.name} - Khách: {contract.customer_id.name} - Lãi hiện tại: {contract.current_interest or 0}")
+
+        _logger.info(f"[Cron] ✅ Đã hoàn tất cập nhật lãi cho {len(contracts)} hợp đồng công ty {company.name}")
+             
 
             
             

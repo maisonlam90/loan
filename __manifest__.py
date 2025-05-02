@@ -31,13 +31,10 @@ Long description of module's purpose
         'views/loan_contract_views.xml',
         'views/loan_asset_views.xml',
         'views/menu.xml',
+        'data/loan_cron.xml',
         
   
     ],
-
-
-  
-
 
     # only loaded in demonstration mode
     'demo': [
