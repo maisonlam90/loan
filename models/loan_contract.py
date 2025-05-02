@@ -421,5 +421,5 @@ class LoanContract(models.Model):
 class ResCompany(models.Model):
     _inherit = 'res.company'
 
-    code = fields.Char(string='Mã công ty', required=True)
+    code = fields.Char(string='Mã công ty')
 

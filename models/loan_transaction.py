@@ -63,64 +63,69 @@ class LoanTransaction(models.Model):
 # Gửi lịch sử thay đổi vào chatter hợp đồng vay    
     
 
-    @api.model
-    def create(self, vals):
-        contract = self.env['loan.contract'].browse(vals['contract_id'])
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            contract = self.env['loan.contract'].browse(vals['contract_id'])
 
-        # Sinh mã giao dịch: LOAN-...-5-1
-        existing = self.search([
-            ('contract_id', '=', contract.id),
-            ('name', '!=', 'New')
-        ], order='id desc', limit=1)
-        if existing and existing[0].name and existing[0].name.count('-') >= 4:
-            try:
-                last_seq = int(existing[0].name.split('-')[-1])
-            except ValueError:
+            # Sinh mã giao dịch: LOAN-...-5-1
+            existing = self.search([
+                ('contract_id', '=', contract.id),
+                ('name', '!=', 'New')
+            ], order='id desc', limit=1)
+            if existing and existing[0].name and existing[0].name.count('-') >= 4:
+                try:
+                    last_seq = int(existing[0].name.split('-')[-1])
+                except ValueError:
+                    last_seq = 0
+            else:
                 last_seq = 0
-        else:
-            last_seq = 0
 
-        seq = last_seq + 1
-        vals['name'] = f"{contract.name}-{seq}"
+            seq = last_seq + 1
+            vals['name'] = f"{contract.name}-{seq}"
 
-        # Tạo bản ghi
-        record = super().create(vals)
+        records = super().create(vals_list)
 
-        # Ghi vào chatter
         if not self.env.context.get('suppress_log'):
-            message = (
-                f"Giao dịch mới: {record.name} - loại {record.transaction_type}, "
-                f"số tiền {record.amount}, ngày {record.date}"
-            )
-            record.contract_id.message_post(body=message)
+            for record in records:
+                message = (
+                    f"Giao dịch mới: {record.name} - loại {record.transaction_type}, "
+                    f"số tiền {record.amount}, ngày {record.date}"
+                )
+                record.contract_id.message_post(body=message)
 
-        return record
-    
+        return records
+
     def write(self, vals):
         significant_fields = {'amount', 'transaction_type', 'date'}
         log_needed = bool(significant_fields.intersection(vals.keys()))
 
-        for rec in self:
-            old_amount = rec.amount
-            old_type = rec.transaction_type
-            old_date = rec.date
+        logs = []
 
-            res = super(LoanTransaction, rec).write(vals)
+        if log_needed and not self.env.context.get('suppress_log'):
+            for rec in self:
+                logs.append({
+                    'rec': rec,
+                    'old_amount': rec.amount,
+                    'old_type': rec.transaction_type,
+                    'old_date': rec.date,
+                })
 
-            if log_needed and not self.env.context.get('suppress_log'):
-                new_amount = rec.amount
-                new_type = rec.transaction_type
-                new_date = rec.date
+        res = super().write(vals)
 
-                msg_parts = [f"{rec.name}"]
+        for log in logs:
+            rec = log['rec']
+            msg_parts = [f"{rec.name}"]
 
-                if 'amount' in vals and old_amount != new_amount:
-                    msg_parts.append(f"Số tiền: {format(old_amount, ',.0f')} → {format(new_amount, ',.0f')}")
-                if 'transaction_type' in vals and old_type != new_type:
-                    msg_parts.append(f"Loại: {old_type} → {new_type}")
-                if 'date' in vals and old_date != new_date:
-                    msg_parts.append(f"Ngày: {old_date} → {new_date}")
+            if 'amount' in vals and log['old_amount'] != rec.amount:
+                msg_parts.append(
+                    f"Số tiền: {format(log['old_amount'], ',.0f')} → {format(rec.amount, ',.0f')}")
+            if 'transaction_type' in vals and log['old_type'] != rec.transaction_type:
+                msg_parts.append(f"Loại: {log['old_type']} → {rec.transaction_type}")
+            if 'date' in vals and log['old_date'] != rec.date:
+                msg_parts.append(f"Ngày: {log['old_date']} → {rec.date}")
 
+            if len(msg_parts) > 1:
                 message = "\n".join(msg_parts)
                 rec.contract_id.message_post(body=message)
 
