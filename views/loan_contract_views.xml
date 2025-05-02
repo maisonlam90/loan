@@ -58,7 +58,7 @@
                      
                         </group>
                         <group>
-                            <field name="collateral_description"/>
+                            <field name="collateral_description" placeholder="Ví dụ: Xe máy Honda Air Blade, màu đỏ, biển số 59X1-123.45"/>
                             <field name="collateral_value"/>
                             <field name="loan_amount" string="Số tiền vay ban đầu"/>
                             <field name="current_principal" string="Số dư gốc hiện tại"/>
@@ -91,6 +91,8 @@
                                     <field name="name"/>
                                     <field name="asset_type"/>
                                     <field name="value"/>
+                                    <field name="image"/>
+                                    <field name="description"/>
                                 </list>
                             </field>
                         </page>

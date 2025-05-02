@@ -4,14 +4,14 @@ from odoo.exceptions import ValidationError
 from datetime import datetime, timedelta, date
 import logging
 import re
-
+# Theo doi file log
 _logger = logging.getLogger(__name__)
 
 
 class LoanContract(models.Model):
     _name = 'loan.contract'
     _description = 'Hợp đồng vay cầm đồ'
-    # Theo dõi log và hoạt động
+    # Theo dõi lich su chatter và hoạt động
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     # Thêm các trường related từ customer
@@ -246,16 +246,29 @@ class LoanContract(models.Model):
 # Tính tổng lãi tất toán
 
 
-    @api.depends('current_principal', 'current_interest', 'storage_fee', 'state')
+    @api.depends('current_principal', 'current_interest', 'storage_fee', 'transaction_ids')
     def _compute_total_settlement_amount(self):
         for record in self:
             if record.state == 'paid':
                 record.total_settlement_amount = 0
             else:
+                # Tổng tiền từ các giao dịch thanh lý và tất toán (đều là số âm)
+                liquidation_total = sum(
+                    tx.amount for tx in record.transaction_ids
+                    if tx.transaction_type == 'liquidation'
+                )
+                settlement_total = sum(
+                    tx.amount for tx in record.transaction_ids
+                    if tx.transaction_type == 'settlement'
+                )
+
+                # Tổng tất toán = gốc + lãi + lưu kho - số tiền thu hồi (từ thanh lý và tất toán)
                 record.total_settlement_amount = (
                     record.current_principal +
                     record.current_interest +
-                    record.storage_fee
+                    record.storage_fee +
+                    liquidation_total +
+                    settlement_total  # vẫn cộng vì settlement là số âm
                 )
 
  # Tính lãi theo phương pháp dồn tích
@@ -290,8 +303,13 @@ class LoanContract(models.Model):
 
                 prev_date = tx.date
 
-            # Tính lãi từ giao dịch cuối đến hiện tại
-            today = fields.Date.today()
+# Tính lãi từ giao dịch cuối đến thời điểm hiện tại hoặc đến ngày tất toán
+            settlement_tx = contract.transaction_ids.filtered(lambda tx: tx.transaction_type == 'settlement')
+            if settlement_tx:
+                today = min(settlement_tx.mapped('date'))  # lấy ngày tất toán sớm nhất
+            else:
+                today = fields.Date.today()
+
             if prev_date < today:
                 days = (today - prev_date).days
                 daily_rate = contract.interest_rate / 100 / 365
@@ -299,50 +317,54 @@ class LoanContract(models.Model):
                 total_interest += period_interest
                 interest_balance += period_interest
 
+            # Cập nhật lại vào contract
             contract.current_interest = max(interest_balance, 0)  # Không âm
             contract.current_principal = balance  # Số dư gốc hiện tại
 # Tính lãi tích luỹ và tổng lãi đã trả phần tổng hợp dưới notebook
 
     @api.depends('transaction_ids.accumulated_interest', 'transaction_ids.date',
-                 'transaction_ids.principal_balance', 'date_start', 'interest_rate', 'loan_amount')
+             'transaction_ids.principal_balance', 'date_start', 'interest_rate', 'loan_amount')
     def _compute_interest_totals(self):
-        """Tính Lãi tích lũy đến ngày hiện tại (bao gồm cả lãi từ giao dịch cuối đến hôm nay)"""
+        """Tính Lãi tích lũy đến ngày hôm nay hoặc đến ngày tất toán nếu có"""
         for contract in self:
-            today = fields.Date.today()
-            daily_rate = contract.interest_rate / 100 / 365
-            total_paid = 0.0
+            # ✅ Lấy ngày giới hạn tính lãi: ngày tất toán nếu có, hoặc hôm nay
+            settlement_tx = contract.transaction_ids.filtered(lambda tx: tx.transaction_type == 'settlement')
+            if settlement_tx:
+                today = min(settlement_tx.mapped('date'))
+            else:
+                today = fields.Date.today()
 
-            # Trường hợp KHÔNG có giao dịch
+            daily_rate = contract.interest_rate / 100 / 365
+
+            # ❌ Nếu không có giao dịch nào
             if not contract.transaction_ids:
-                days = (
-                    today - contract.date_start).days if contract.date_start else 0
+                days = (today - contract.date_start).days if contract.date_start else 0
                 contract.accumulated_interest = contract.loan_amount * daily_rate * days
                 contract.total_paid_interest = 0.0
                 continue
 
-            # Lấy giao dịch cuối cùng trước hoặc bằng hôm nay
-            last_tx = contract.transaction_ids.filtered(
-                lambda tx: tx.date <= today
-            ).sorted('date', reverse=True)[:1]
+            # ✅ Bỏ qua các giao dịch chưa có ID hoặc không có ngày
+            valid_txs = contract.transaction_ids.filtered(lambda tx: tx.id and tx.date and tx.date <= today)
+
+            # 🔍 Lấy giao dịch cuối cùng thực sự theo ngày và ID
+            last_tx = valid_txs.sorted(lambda tx: (tx.date, tx.id), reverse=True)[:1]
 
             if last_tx:
-                # Tính lãi từ giao dịch cuối đến hôm nay
+                last_tx = last_tx[0]
                 days_since_last_tx = (today - last_tx.date).days
                 interest_since_last_tx = last_tx.principal_balance * daily_rate * days_since_last_tx
 
-                # Lãi tích lũy = Lãi đến giao dịch cuối + Lãi từ giao dịch cuối đến hôm nay
                 contract.accumulated_interest = last_tx.accumulated_interest + interest_since_last_tx
 
-                # Tổng lãi đã trả
+                # Tổng lãi đã trả (trong phạm vi ngày tính lãi)
                 contract.total_paid_interest = sum(
                     abs(tx.amount)
-                    for tx in contract.transaction_ids
-                    if tx.transaction_type == 'interest' and tx.amount < 0 and tx.date <= today
+                    for tx in valid_txs
+                    if tx.transaction_type == 'interest' and tx.amount < 0
                 )
             else:
                 # Nếu tất cả giao dịch đều trong tương lai
-                days = (
-                    today - contract.date_start).days if contract.date_start else 0
+                days = (today - contract.date_start).days if contract.date_start else 0
                 contract.accumulated_interest = contract.loan_amount * daily_rate * days
                 contract.total_paid_interest = 0.0
 
