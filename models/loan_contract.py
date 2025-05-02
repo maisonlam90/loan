@@ -394,6 +394,10 @@ class LoanContract(models.Model):
             contract._compute_current_interest()
             contract._compute_total_settlement_amount()
             
+ # Nút cập nhật lãi toàn cửa hàng   
+
+            
+            
             
 # kế thừa mã công ty để tạo số hợp đồng tự động           
 class ResCompany(models.Model):

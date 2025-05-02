@@ -5,6 +5,7 @@
         <field name="name">loan contract list</field>
         <field name="model">loan.contract</field>
         <field name="arch" type="xml">
+           
             <list>
                 <field name="name"/>
                 <field name="company_id" optional="show" />
